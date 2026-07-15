@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wavelength</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0A0A0F" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
+    <link rel="icon" href="icons/icon-192.png" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg: #0A0A0F;
+            --panel: #131318;
+            --panel-2: #1B1B22;
+            --hairline: #232330;
+            --text: #F2F2F4;
+            --muted: #8E8E9C;
+            --muted-2: #5C5C68;
+            --accent: #7C6CFF;
+            --accent-dim: #7C6CFF33;
+            --amber: #FFB454;
+            --radius: 10px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: var(--bg);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .display {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        /* ---------- Config / connect gate ---------- */
+        #configGate {
+            max-width: 480px;
+            margin: 80px auto;
+            padding: 28px;
+            background: var(--panel);
+            border: 1px solid var(--hairline);
+            border-radius: var(--radius);
+            display: none;
+        }
+
+        #configGate h2 {
+            margin: 0 0 6px 0;
+            font-size: 18px;
+        }
+
+        #configGate p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        #configGate label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin: 14px 0 6px;
+        }
+
+        #configGate input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--panel-2);
+            border: 1px solid var(--hairline);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 13px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        #configGate button {
+            margin-top: 18px;
+            width: 100%;
+            padding: 11px;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            font-size: 13.5px;
+            cursor: pointer;
+        }
+
+        #loadingState,
+        #errorState {
+            max-width: 480px;
+            margin: 120px auto;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13.5px;
+            display: none;
+        }
+
+        #errorState {
+            color: #FF6B6B;
+        }
+
+        /* ---------- App shell ---------- */
+        .app {
+            display: none;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: 56px 1fr 88px;
+            grid-template-areas:
+                "sidebar topbar"
+                "sidebar main"
+                "player player";
+            height: 100vh;
+            width: 100vw;
+        }
+
+        @media (max-width:820px) {
+            .app {
+                grid-template-columns: 72px 1fr;
+            }
+
+            .wl-nav-label,
+            .wl-section-label,
+            .wl-playlist-name {
+                display: none;
+            }
+        }
+
+        /* ---------- Sidebar ---------- */
+        .sidebar {
+            grid-area: sidebar;
+            background: var(--bg);
+            border-right: 1px solid var(--hairline);
+            display: flex;
+            flex-direction: column;
+            padding: 18px 14px;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .wl-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0 6px 6px 6px;
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .wl-logo svg {
+            flex-shrink: 0;
+        }
+
+        .wl-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .wl-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 10px;
+            border-radius: 8px;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .wl-nav-item:hover {
+            color: var(--text);
+            background: var(--panel);
+        }
+
+        .wl-nav-item.active {
+            color: var(--text);
+            background: var(--panel-2);
+        }
+
+        .wl-nav-item svg {
+            flex-shrink: 0;
+        }
+
+        .wl-section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--muted-2);
+            padding: 4px 10px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .wl-playlists {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .wl-playlist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 13.5px;
+            transition: background .15s, color .15s;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .wl-playlist-item:hover,
+        .wl-playlist-item.active {
+            color: var(--text);
+            background: var(--panel);
+        }
+
+        .wl-playlist-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: end;
+            gap: 2px;
+            padding: 5px 4px;
+        }
+
+        .wl-playlist-swatch span {
+            flex: 1;
+            background: rgba(255, 255, 255, .55);
+            border-radius: 1px;
+        }
+
+        /* ---------- Topbar ---------- */
+        .topbar {
+            grid-area: topbar;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--hairline);
+            background: linear-gradient(180deg, rgba(19, 19, 24, .6), rgba(19, 19, 24, 0));
+        }
+
+        .wl-search {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--panel-2);
+            border: 1px solid var(--hairline);
+            border-radius: 20px;
+            padding: 8px 16px;
+            width: 340px;
+            transition: border-color .15s;
+        }
+
+        .wl-search:focus-within {
+            border-color: var(--accent);
+        }
+
+        .wl-search input {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--text);
+            font-size: 13.5px;
+            width: 100%;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .wl-search input::placeholder {
+            color: var(--muted-2);
+        }
+
+        .wl-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #4A3FCC);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        /* ---------- Main ---------- */
+        .main {
+            grid-area: main;
+            overflow-y: auto;
+            padding: 28px 32px 100px 32px;
+        }
+
+        .wl-hero {
+            margin-bottom: 28px;
+        }
+
+        .wl-hero h1 {
+            font-size: 26px;
+            margin: 0 0 4px 0;
+            letter-spacing: -0.01em;
+        }
+
+        .wl-hero p {
+            color: var(--muted);
+            font-size: 13.5px;
+            margin: 0;
+        }
+
+        .wl-row {
+            margin-bottom: 34px;
+        }
+
+        .wl-row-head {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+
+        .wl-row-head h2 {
+            font-size: 17px;
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+
+        .wl-row-head span {
+            font-size: 12px;
+            color: var(--muted-2);
+        }
+
+        .wl-cards {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+        }
+
+        .wl-card {
+            width: 168px;
+            flex-shrink: 0;
+            cursor: pointer;
+            padding: 12px;
+            border-radius: var(--radius);
+            background: var(--panel);
+            border: 1px solid transparent;
+            transition: background .15s, border-color .15s, transform .15s;
+        }
+
+        .wl-card:hover {
+            background: var(--panel-2);
+            border-color: var(--hairline);
+            transform: translateY(-2px);
+        }
+
+        .wl-cover {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 7px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: end;
+            gap: 3px;
+            padding: 14px 12px;
+        }
+
+        .wl-cover span {
+            flex: 1;
+            border-radius: 2px 2px 0 0;
+            background: rgba(255, 255, 255, .5);
+        }
+
+        .wl-cover-playbtn {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity .15s, transform .15s;
+            box-shadow: 0 6px 16px rgba(124, 108, 255, .4);
+            border: none;
+            cursor: pointer;
+        }
+
+        .wl-card:hover .wl-cover-playbtn {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .wl-card-title {
+            font-size: 13.5px;
+            font-weight: 600;
+            margin: 0 0 3px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wl-card-artist {
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0 0 8px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wl-mood-tag {
+            display: inline-block;
+            font-size: 10px;
+            padding: 2px 7px;
+            border-radius: 20px;
+            background: var(--amber)22;
+            color: var(--amber);
+            font-weight: 500;
+            letter-spacing: .02em;
+        }
+
+        .wl-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .wl-list-row {
+            display: grid;
+            grid-template-columns: 28px 40px 1fr 90px 70px 36px;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .wl-list-row:hover {
+            background: var(--panel);
+        }
+
+        .wl-list-row.playing {
+            background: var(--accent-dim);
+        }
+
+        .wl-list-idx {
+            color: var(--muted-2);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .wl-list-row.playing .wl-list-idx {
+            color: var(--accent);
+        }
+
+        .wl-mini-cover {
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            display: flex;
+            align-items: end;
+            gap: 2px;
+            padding: 6px 5px;
+        }
+
+        .wl-mini-cover span {
+            flex: 1;
+            background: rgba(255, 255, 255, .5);
+            border-radius: 1px;
+        }
+
+        .wl-list-title {
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        .wl-list-artist {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .wl-list-genre {
+            font-size: 11px;
+            color: var(--muted-2);
+        }
+
+        .wl-list-dur {
+            font-size: 12px;
+            color: var(--muted);
+            text-align: right;
+        }
+
+        .wl-heart {
+            background: none;
+            border: none;
+            color: var(--muted-2);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .wl-heart.liked {
+            color: var(--accent);
+        }
+
+        .wl-heart svg {
+            display: block;
+        }
+
+        .wl-empty {
+            color: var(--muted);
+            font-size: 13.5px;
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        /* ---------- Player ---------- */
+        .player {
+            grid-area: player;
+            background: var(--panel);
+            border-top: 1px solid var(--hairline);
+            display: grid;
+            grid-template-columns: 240px 1fr 240px;
+            align-items: center;
+            padding: 0 16px;
+            gap: 16px;
+        }
+
+        .wl-now-playing {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .wl-now-cover {
+            width: 52px;
+            height: 52px;
+            border-radius: 6px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: end;
+            gap: 2px;
+            padding: 8px 7px;
+        }
+
+        .wl-now-cover span {
+            flex: 1;
+            background: rgba(255, 255, 255, .55);
+            border-radius: 1px;
+        }
+
+        .wl-now-meta {
+            min-width: 0;
+        }
+
+        .wl-now-title {
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wl-now-artist {
+            font-size: 11.5px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wl-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .wl-transport {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .wl-transport button {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color .15s, transform .1s;
+            padding: 4px;
+        }
+
+        .wl-transport button:hover {
+            color: var(--text);
+        }
+
+        .wl-transport button.active {
+            color: var(--accent);
+        }
+
+        .wl-play-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--text) !important;
+            color: var(--bg) !important;
+        }
+
+        .wl-play-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .wl-seek-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 560px;
+        }
+
+        .wl-time {
+            font-size: 10.5px;
+            color: var(--muted-2);
+            width: 34px;
+            flex-shrink: 0;
+        }
+
+        .wl-time.right {
+            text-align: right;
+        }
+
+        .wl-waveform {
+            flex: 1;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            gap: 1.5px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .wl-waveform span {
+            flex: 1;
+            background: var(--hairline);
+            border-radius: 1px;
+            min-width: 1px;
+            transition: background .1s;
+        }
+
+        .wl-waveform span.played {
+            background: var(--accent);
+        }
+
+        .wl-side-controls {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 14px;
+        }
+
+        .wl-side-controls button {
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+        }
+
+        .wl-side-controls button:hover {
+            color: var(--text);
+        }
+
+        .wl-side-controls button.active {
+            color: var(--accent);
+        }
+
+        .wl-volume {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 100px;
+        }
+
+        .wl-volume input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--hairline);
+            outline: none;
+        }
+
+        .wl-volume input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: var(--text);
+            cursor: pointer;
+        }
+
+        /* ---------- Queue drawer ---------- */
+        .wl-queue-drawer {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 320px;
+            height: calc(100vh - 88px);
+            background: var(--panel);
+            border-left: 1px solid var(--hairline);
+            transition: right .2s ease;
+            z-index: 20;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .wl-queue-drawer.open {
+            right: 0;
+        }
+
+        .wl-queue-drawer h3 {
+            font-size: 14px;
+            margin: 0 0 16px 0;
+        }
+
+        .wl-queue-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 4px;
+            border-radius: 6px;
+        }
+
+        .wl-queue-item:hover {
+            background: var(--panel-2);
+        }
+
+        .wl-queue-cover {
+            width: 36px;
+            height: 36px;
+            border-radius: 5px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: end;
+            gap: 2px;
+            padding: 5px 4px;
+        }
+
+        .wl-queue-cover span {
+            flex: 1;
+            background: rgba(255, 255, 255, .5);
+            border-radius: 1px;
+        }
+
+        .wl-queue-title {
+            font-size: 12.5px;
+            font-weight: 500;
+        }
+
+        .wl-queue-artist {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* ---------- Toast ---------- */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--panel-2);
+            border: 1px solid var(--hairline);
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            opacity: 0;
+            transition: opacity .2s, transform .2s;
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--panel-2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- CONNECT GATE: shown once until Supabase URL/key are saved in this browser -->
+    <div id="configGate">
+        <h2 class="display">Connect Wavelength to its backend</h2>
+        <p>Paste your Supabase project URL and anon key (same ones used for the admin panel — Project Settings → API).
+            Saved only in this browser.</p>
+        <label>Project URL</label>
+        <input id="cfgUrl" placeholder="https://xxxx.supabase.co" />
+        <label>Anon public key</label>
+        <input id="cfgKey" placeholder="eyJhbGciOi..." />
+        <button id="cfgSave">Connect</button>
+    </div>
+
+    <div id="loadingState">Loading songs…</div>
+    <div id="errorState"></div>
+
+    <div class="app" id="appShell">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="wl-logo display">
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                    <rect x="1" y="9" width="3" height="4" rx="1" fill="#7C6CFF" />
+                    <rect x="6" y="5" width="3" height="12" rx="1" fill="#7C6CFF" />
+                    <rect x="11" y="1" width="3" height="20" rx="1" fill="#FFB454" />
+                    <rect x="16" y="6" width="3" height="10" rx="1" fill="#7C6CFF" />
+                </svg>
+                <span class="wl-nav-label">Wavelength</span>
+            </div>
+            <div class="wl-nav">
+                <button class="wl-nav-item active" data-view="home">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z" />
+                    </svg>
+                    <span class="wl-nav-label">Home</span>
+                </button>
+                <button class="wl-nav-item" data-view="search">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="7" />
+                        <path d="M21 21l-4.3-4.3" />
+                    </svg>
+                    <span class="wl-nav-label">Search</span>
+                </button>
+                <button class="wl-nav-item" data-view="library">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="16" rx="2" />
+                        <path d="M3 10h18" />
+                    </svg>
+                    <span class="wl-nav-label">Your Library</span>
+                </button>
+            </div>
+
+            <div class="wl-section-label">Playlists</div>
+            <div class="wl-playlists" id="playlistList"></div>
+        </div>
+
+        <!-- TOPBAR -->
+        <div class="topbar">
+            <div class="wl-search">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5C5C68" stroke-width="2">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M21 21l-4.3-4.3" />
+                </svg>
+                <input id="searchInput" type="text" placeholder="Search songs, artists, moods..." />
+            </div>
+            <div class="wl-avatar">JS</div>
+        </div>
+
+        <!-- MAIN -->
+        <div class="main" id="mainContent"></div>
+
+        <!-- PLAYER -->
+        <div class="player">
+            <div class="wl-now-playing">
+                <div class="wl-now-cover" id="nowCover"></div>
+                <div class="wl-now-meta">
+                    <div class="wl-now-title" id="nowTitle">—</div>
+                    <div class="wl-now-artist" id="nowArtist">Nothing playing</div>
+                </div>
+                <button class="wl-heart" id="nowHeart" title="Like">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="wl-controls">
+                <div class="wl-transport">
+                    <button id="shuffleBtn" title="Shuffle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M16 3h5v5" />
+                            <path d="M4 20L21 3" />
+                            <path d="M21 16v5h-5" />
+                            <path d="M15 15l6 6" />
+                            <path d="M4 4l5 5" />
+                        </svg></button>
+                    <button id="prevBtn" title="Previous"><svg width="18" height="18" viewBox="0 0 24 24"
+                            fill="currentColor">
+                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+                        </svg></button>
+                    <button class="wl-play-btn" id="playBtn" title="Play/Pause">
+                        <svg id="playIcon" width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </button>
+                    <button id="nextBtn" title="Next"><svg width="18" height="18" viewBox="0 0 24 24"
+                            fill="currentColor">
+                            <path d="M18 6h-2v12h2zM14.5 12L6 6v12z" />
+                        </svg></button>
+                    <button id="repeatBtn" title="Repeat"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M17 2l4 4-4 4" />
+                            <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+                            <path d="M7 22l-4-4 4-4" />
+                            <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+                        </svg></button>
+                </div>
+                <div class="wl-seek-row">
+                    <span class="wl-time mono" id="timeCurrent">0:00</span>
+                    <div class="wl-waveform" id="waveform"></div>
+                    <span class="wl-time right mono" id="timeTotal">0:00</span>
+                </div>
+            </div>
+
+            <div class="wl-side-controls">
+                <button id="queueBtn" title="Queue"><svg width="17" height="17" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h12M3 12h18M3 18h12" />
+                    </svg></button>
+                <div class="wl-volume">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"
+                        style="color:var(--muted);flex-shrink:0;">
+                        <path d="M5 9v6h4l5 5V4L9 9z" />
+                    </svg>
+                    <input type="range" id="volumeSlider" min="0" max="100" value="70" />
+                </div>
+            </div>
+        </div>
+
+        <div class="wl-queue-drawer" id="queueDrawer">
+            <h3>Next up</h3>
+            <div id="queueList"></div>
+        </div>
+
+    </div>
+
+    <audio id="audioEl" preload="none"></audio>
+    <div class="toast" id="toast"></div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+        const $ = id => document.getElementById(id);
+        let supabase = null;
+
+        /* ---------------- Connect gate ---------------- */
+        function initConnection() {
+            const saved = localStorage.getItem('wl_supabase_cfg');
+            if (saved) {
+                const { url, key } = JSON.parse(saved);
+                connect(url, key);
+            } else {
+                $('configGate').style.display = 'block';
+            }
+        }
+        $('cfgSave').addEventListener('click', () => {
+            const url = $('cfgUrl').value.trim();
+            const key = $('cfgKey').value.trim();
+            if (!url || !key) return;
+            localStorage.setItem('wl_supabase_cfg', JSON.stringify({ url, key }));
+            connect(url, key);
+        });
+        function connect(url, key) {
+            supabase = createClient(url, key);
+            $('configGate').style.display = 'none';
+            bootstrap();
+        }
+
+        /* ---------------- Data (loaded from Supabase) ---------------- */
+        let SONGS = [];
+        let songById = {};
+        let ROWS = [];
+        let PLAYLISTS = [];
+
+        async function bootstrap() {
+            $('loadingState').style.display = 'block';
+            const { data, error } = await supabase.from('songs').select('*').order('created_at', { ascending: false });
+            $('loadingState').style.display = 'none';
+
+            if (error) {
+                $('errorState').style.display = 'block';
+                $('errorState').textContent = 'Could not load songs: ' + error.message;
+                return;
+            }
+            if (!data || data.length === 0) {
+                $('errorState').style.display = 'block';
+                $('errorState').textContent = 'Connected, but no songs found yet. Add some in admin.html.';
+                return;
+            }
+
+            SONGS = data.map(s => ({
+                id: s.id, title: s.title, artist: s.artist,
+                genre: s.genre, mood: s.mood, dur: s.duration_sec, audioUrl: s.audio_url
+            }));
+            songById = Object.fromEntries(SONGS.map(s => [s.id, s]));
+
+            buildRowsAndPlaylists();
+            queue = [...SONGS];
+            queueIndex = 0;
+
+            $('appShell').style.display = 'grid';
+            render();
+        }
+
+        // Build homepage rows + sidebar playlists dynamically from whatever is in the DB,
+        // since real song IDs are UUIDs (not the fixed "s1".."s16" the old mock used).
+        function buildRowsAndPlaylists() {
+            const byMood = {};
+            SONGS.forEach(s => { (byMood[s.mood] ||= []).push(s); });
+            const topMoods = Object.keys(byMood).slice(0, 2);
+
+            ROWS = [
+                { title: "Recently added", subtitle: "Newest in the catalog", ids: SONGS.slice(0, 6).map(s => s.id) },
+                ...topMoods.map(mood => ({
+                    title: `${mood} mood`, subtitle: "Grouped by mood",
+                    ids: byMood[mood].slice(0, 6).map(s => s.id)
+                })),
+                { title: "All songs", subtitle: `${SONGS.length} tracks`, ids: SONGS.map(s => s.id) },
+            ];
+
+            const shuffledIds = [...SONGS].sort(() => Math.random() - 0.5).map(s => s.id);
+            PLAYLISTS = [
+                { id: "liked", name: "Liked Songs", ids: [] },
+                { id: "p1", name: "Daily Mix", ids: shuffledIds.slice(0, Math.min(8, SONGS.length)) },
+                { id: "p2", name: "Discover", ids: [...shuffledIds].reverse().slice(0, Math.min(8, SONGS.length)) },
+            ];
+        }
+
+        /* ---------------- State ---------------- */
+        let liked = new Set();
+        let currentView = { type: "home" };
+        let queue = [];
+        let queueIndex = 0;
+        let isPlaying = false;
+        let currentTime = 0;
+        let shuffled = false;
+        let repeatMode = "off"; // off | all | one
+        let tickHandle = null;
+        const audioEl = $('audioEl');
+
+        /* ---------------- Waveform helpers (procedural, seeded by song id) ---------------- */
+        function seededRand(seed) {
+            let h = 0;
+            for (let i = 0; i < seed.length; i++) { h = (h * 31 + seed.charCodeAt(i)) >>> 0; }
+            return function () {
+                h = (h * 1664525 + 1013904223) >>> 0;
+                return (h % 1000) / 1000;
+            };
+        }
+        function waveformHeights(seed, n) {
+            const rnd = seededRand(seed);
+            const heights = [];
+            let base = 0.4;
+            for (let i = 0; i < n; i++) {
+                base += (rnd() - 0.5) * 0.35;
+                base = Math.max(0.12, Math.min(0.95, base));
+                heights.push(base);
+            }
+            return heights;
+        }
+        function coverBarsHTML(seed, n) {
+            return waveformHeights(seed, n).map(h => `<span style="height:${Math.round(h * 100)}%"></span>`).join("");
+        }
+        function fmtTime(sec) {
+            sec = Math.max(0, Math.round(sec));
+            const m = Math.floor(sec / 60), s = sec % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+        function showToast(msg) {
+            const t = $('toast'); t.textContent = msg; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        /* ---------------- Rendering ---------------- */
+        function renderPlaylistSidebar() {
+            const el = $('playlistList');
+            el.innerHTML = PLAYLISTS.map(p => `
+    <button class="wl-playlist-item ${currentView.type === 'playlist' && currentView.id === p.id ? 'active' : ''}" data-playlist="${p.id}">
+      <div class="wl-playlist-swatch" style="background:${p.id === 'liked' ? 'linear-gradient(135deg,#7C6CFF,#4A3FCC)' : '#232330'}">
+        ${coverBarsHTML(p.id, 6)}
+      </div>
+      <span class="wl-playlist-name">${p.name}</span>
+    </button>
+  `).join("");
+            el.querySelectorAll("[data-playlist]").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    currentView = { type: "playlist", id: btn.dataset.playlist };
+                    render();
+                });
+            });
+        }
+
+        function songCardHTML(song) {
+            return `
+    <div class="wl-card" data-song="${song.id}">
+      <div class="wl-cover" style="background:#1F1F28">
+        ${coverBarsHTML(song.id, 9)}
+        <button class="wl-cover-playbtn" data-play="${song.id}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#0A0A0F"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+      </div>
+      <p class="wl-card-title">${song.title}</p>
+      <p class="wl-card-artist">${song.artist}</p>
+      <span class="wl-mood-tag mono">${song.mood}</span>
+    </div>
+  `;
+        }
+
+        function songListRowHTML(song, idx) {
+            const isCurrent = queue[queueIndex] && queue[queueIndex].id === song.id;
+            const isLiked = liked.has(song.id);
+            return `
+    <div class="wl-list-row ${isCurrent && isPlaying ? 'playing' : ''}" data-song="${song.id}">
+      <span class="wl-list-idx mono">${isCurrent && isPlaying ? '♫' : idx + 1}</span>
+      <div class="wl-mini-cover" style="background:#1F1F28">${coverBarsHTML(song.id, 5)}</div>
+      <div style="min-width:0;">
+        <div class="wl-list-title">${song.title}</div>
+        <div class="wl-list-artist">${song.artist}</div>
+      </div>
+      <span class="wl-list-genre mono">${song.genre}</span>
+      <span class="wl-list-dur mono">${fmtTime(song.dur)}</span>
+      <button class="wl-heart ${isLiked ? 'liked' : ''}" data-like="${song.id}">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
+      </button>
+    </div>
+  `;
+        }
+
+        function greeting() {
+            const h = new Date().getHours();
+            if (h < 12) return "Good morning";
+            if (h < 18) return "Good afternoon";
+            return "Good evening";
+        }
+
+        function render() {
+            renderPlaylistSidebar();
+            document.querySelectorAll(".wl-nav-item").forEach(b => b.classList.toggle("active", b.dataset.view === currentView.type));
+
+            const main = $('mainContent');
+
+            if (currentView.type === "home") {
+                main.innerHTML = `
+      <div class="wl-hero">
+        <h1 class="display">${greeting()}</h1>
+        <p>Live from your Wavelength database.</p>
+      </div>
+      ${ROWS.map(row => `
+        <div class="wl-row">
+          <div class="wl-row-head">
+            <h2 class="display">${row.title}</h2>
+            <span class="mono">${row.subtitle}</span>
+          </div>
+          <div class="wl-cards">
+            ${row.ids.map(id => songCardHTML(songById[id])).join("")}
+          </div>
+        </div>
+      `).join("")}
+    `;
+            } else if (currentView.type === "search") {
+                main.innerHTML = `
+      <div class="wl-hero"><h1 class="display">Search</h1><p>Type in the bar above — matches title, artist, genre, and mood.</p></div>
+      <div class="wl-list" id="searchResults"></div>
+    `;
+                renderSearch($('searchInput').value);
+            } else if (currentView.type === "library") {
+                main.innerHTML = `
+      <div class="wl-hero"><h1 class="display">Your Library</h1><p>Every playlist you've made, in one place.</p></div>
+      <div class="wl-cards">
+        ${PLAYLISTS.map(p => `
+          <div class="wl-card" data-playlist-card="${p.id}">
+            <div class="wl-cover" style="background:${p.id === 'liked' ? 'linear-gradient(135deg,#7C6CFF,#4A3FCC)' : '#1F1F28'}">
+              ${coverBarsHTML(p.id, 9)}
+            </div>
+            <p class="wl-card-title">${p.name}</p>
+            <p class="wl-card-artist">${(p.id === 'liked' ? liked.size : p.ids.length)} songs</p>
+          </div>
+        `).join("")}
+      </div>
+    `;
+                main.querySelectorAll("[data-playlist-card]").forEach(el => {
+                    el.addEventListener("click", () => { currentView = { type: "playlist", id: el.dataset.playlistCard }; render(); });
+                });
+            } else if (currentView.type === "playlist") {
+                const pl = PLAYLISTS.find(p => p.id === currentView.id);
+                const ids = pl.id === 'liked' ? [...liked] : pl.ids;
+                main.innerHTML = `
+      <div class="wl-hero"><h1 class="display">${pl.name}</h1><p>${ids.length} songs</p></div>
+      <div class="wl-list">
+        ${ids.length ? ids.map((id, i) => songListRowHTML(songById[id], i)).join("") : '<div class="wl-empty">Nothing here yet — tap the heart on a song to add it.</div>'}
+      </div>
+    `;
+            }
+
+            attachSongHandlers();
+            renderNowPlaying();
+            renderQueueDrawer();
+        }
+
+        function renderSearch(query) {
+            const q = query.trim().toLowerCase();
+            const results = q ? SONGS.filter(s =>
+                s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q) ||
+                s.genre.toLowerCase().includes(q) || s.mood.toLowerCase().includes(q)
+            ) : SONGS;
+            const el = $('searchResults');
+            if (!el) return;
+            el.innerHTML = results.length ? results.map((s, i) => songListRowHTML(s, i)).join("") : '<div class="wl-empty">No matches. Try a mood like "calm" or "focus".</div>';
+            attachSongHandlers();
+        }
+
+        function attachSongHandlers() {
+            document.querySelectorAll("[data-play]").forEach(btn => {
+                btn.addEventListener("click", (e) => { e.stopPropagation(); playSongById(btn.dataset.play); });
+            });
+            document.querySelectorAll(".wl-list-row[data-song], .wl-card[data-song]").forEach(row => {
+                row.addEventListener("click", () => playSongById(row.dataset.song));
+            });
+            document.querySelectorAll("[data-like]").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const id = btn.dataset.like;
+                    liked.has(id) ? liked.delete(id) : liked.add(id);
+                    render();
+                });
+            });
+        }
+
+        function playSongById(id) {
+            const idx = queue.findIndex(s => s.id === id);
+            if (idx === -1) {
+                queue = [...SONGS];
+                queueIndex = queue.findIndex(s => s.id === id);
+            } else {
+                queueIndex = idx;
+            }
+            currentTime = 0;
+            isPlaying = true;
+            startPlayback();
+            render();
+        }
+
+        // Uses a real <audio> element when the song has an audio_url (e.g. once you
+        // upload files via Supabase Storage or Cloudflare R2). Falls back to the
+        // silent simulated waveform clock otherwise, same as the original mock.
+        function startPlayback() {
+            stopPlayback();
+            const song = queue[queueIndex];
+            if (!song) return;
+
+            if (song.audioUrl) {
+                audioEl.src = song.audioUrl;
+                audioEl.currentTime = currentTime;
+                if (isPlaying) audioEl.play().catch(err => showToast('Playback error: ' + err.message));
+            } else {
+                audioEl.removeAttribute('src');
+                tickHandle = setInterval(() => {
+                    if (!isPlaying) return;
+                    currentTime += 0.25;
+                    if (currentTime >= song.dur) {
+                        if (repeatMode === "one") { currentTime = 0; } else { advance(); return; }
+                    }
+                    renderNowPlaying();
+                }, 250);
+            }
+        }
+        function stopPlayback() {
+            if (tickHandle) clearInterval(tickHandle);
+            tickHandle = null;
+        }
+        audioEl.addEventListener('timeupdate', () => {
+            if (queue[queueIndex]?.audioUrl) { currentTime = audioEl.currentTime; renderNowPlaying(); }
+        });
+        audioEl.addEventListener('ended', () => {
+            if (repeatMode === "one") { audioEl.currentTime = 0; audioEl.play().catch(() => { }); }
+            else { advance(); }
+        });
+
+        function renderNowPlaying() {
+            const song = queue[queueIndex];
+            $('nowTitle').textContent = song ? song.title : "—";
+            $('nowArtist').textContent = song ? song.artist : "Nothing playing";
+            $('nowCover').innerHTML = song ? coverBarsHTML(song.id, 6) : "";
+            $('nowCover').style.background = song ? "#1F1F28" : "transparent";
+            $('nowHeart').classList.toggle("liked", !!(song && liked.has(song.id)));
+            $('playIcon').innerHTML = isPlaying
+                ? '<rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/>'
+                : '<path d="M8 5v14l11-7z"/>';
+            $('shuffleBtn').classList.toggle("active", shuffled);
+            $('repeatBtn').classList.toggle("active", repeatMode !== "off");
+
+            const total = song ? song.dur : 0;
+            $('timeCurrent').textContent = fmtTime(currentTime);
+            $('timeTotal').textContent = fmtTime(total);
+
+            const wf = $('waveform');
+            const n = 60;
+            const heights = song ? waveformHeights(song.id, n) : new Array(n).fill(0.3);
+            const playedCount = total ? Math.round((currentTime / total) * n) : 0;
+            wf.innerHTML = heights.map((h, i) => `<span class="${i < playedCount ? 'played' : ''}" style="height:${Math.round(h * 100)}%"></span>`).join("");
+        }
+
+        function renderQueueDrawer() {
+            const upcoming = queue.slice(queueIndex + 1, queueIndex + 9);
+            $('queueList').innerHTML = upcoming.length
+                ? upcoming.map(s => `
+        <div class="wl-queue-item" data-song="${s.id}">
+          <div class="wl-queue-cover" style="background:#1F1F28">${coverBarsHTML(s.id, 4)}</div>
+          <div>
+            <div class="wl-queue-title">${s.title}</div>
+            <div class="wl-queue-artist">${s.artist}</div>
+          </div>
+        </div>`).join("")
+                : '<div class="wl-empty" style="padding:20px 0;">Queue is empty.</div>';
+            document.querySelectorAll("#queueList [data-song]").forEach(row => {
+                row.addEventListener("click", () => playSongById(row.dataset.song));
+            });
+        }
+
+        function advance() {
+            if (queueIndex < queue.length - 1) {
+                queueIndex++;
+            } else if (repeatMode === "all") {
+                queueIndex = 0;
+            } else {
+                isPlaying = false; currentTime = 0; stopPlayback(); renderNowPlaying();
+                return;
+            }
+            currentTime = 0;
+            startPlayback();
+            renderNowPlaying();
+        }
+
+        function goPrev() {
+            if (currentTime > 3) { currentTime = 0; if (queue[queueIndex]?.audioUrl) audioEl.currentTime = 0; }
+            else if (queueIndex > 0) { queueIndex--; currentTime = 0; startPlayback(); }
+            renderNowPlaying();
+        }
+
+        /* ---------------- Wire up controls ---------------- */
+        document.querySelectorAll(".wl-nav-item[data-view]").forEach(btn => {
+            btn.addEventListener("click", () => { currentView = { type: btn.dataset.view }; render(); });
+        });
+
+        $('playBtn').addEventListener("click", () => {
+            if (!queue[queueIndex]) { if (SONGS[0]) playSongById(SONGS[0].id); return; }
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                if (queue[queueIndex].audioUrl) audioEl.play().catch(err => showToast('Playback error: ' + err.message));
+                startPlayback();
+            } else {
+                if (queue[queueIndex].audioUrl) audioEl.pause();
+                stopPlayback();
+            }
+            renderNowPlaying();
+            render();
+        });
+        $('nextBtn').addEventListener("click", advance);
+        $('prevBtn').addEventListener("click", goPrev);
+        $('shuffleBtn').addEventListener("click", () => {
+            shuffled = !shuffled;
+            if (shuffled) {
+                const current = queue[queueIndex];
+                const rest = queue.filter((_, i) => i !== queueIndex).sort(() => Math.random() - 0.5);
+                queue = [current, ...rest];
+                queueIndex = 0;
+            } else {
+                queue = [...SONGS];
+                queueIndex = queue.findIndex(s => s.id === (queue[0] && queue[0].id));
+            }
+            renderNowPlaying(); renderQueueDrawer();
+        });
+        $('repeatBtn').addEventListener("click", () => {
+            repeatMode = repeatMode === "off" ? "all" : repeatMode === "all" ? "one" : "off";
+            renderNowPlaying();
+        });
+        $('nowHeart').addEventListener("click", () => {
+            const song = queue[queueIndex];
+            if (!song) return;
+            liked.has(song.id) ? liked.delete(song.id) : liked.add(song.id);
+            renderNowPlaying();
+        });
+
+        $('waveform').addEventListener("click", (e) => {
+            const song = queue[queueIndex];
+            if (!song) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+            currentTime = pct * song.dur;
+            if (song.audioUrl) audioEl.currentTime = currentTime;
+            renderNowPlaying();
+        });
+
+        $('volumeSlider').addEventListener("input", (e) => {
+            audioEl.volume = e.target.value / 100;
+        });
+
+        $('queueBtn').addEventListener("click", () => {
+            $('queueDrawer').classList.toggle("open");
+            $('queueBtn').classList.toggle("active");
+        });
+
+        $('searchInput').addEventListener("input", (e) => {
+            if (currentView.type !== "search") { currentView = { type: "search" }; render(); }
+            renderSearch(e.target.value);
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.target.tagName === "INPUT") return;
+            if (e.code === "Space") { e.preventDefault(); $('playBtn').click(); }
+            if (e.code === "ArrowRight") { currentTime = Math.min((queue[queueIndex]?.dur || 0), currentTime + 5); if (queue[queueIndex]?.audioUrl) audioEl.currentTime = currentTime; renderNowPlaying(); }
+            if (e.code === "ArrowLeft") { currentTime = Math.max(0, currentTime - 5); if (queue[queueIndex]?.audioUrl) audioEl.currentTime = currentTime; renderNowPlaying(); }
+            if (e.code === "ArrowUp") { const s = $('volumeSlider'); s.value = Math.min(100, +s.value + 5); audioEl.volume = s.value / 100; }
+            if (e.code === "ArrowDown") { const s = $('volumeSlider'); s.value = Math.max(0, +s.value - 5); audioEl.volume = s.value / 100; }
+        });
+
+        audioEl.volume = 0.7;
+        initConnection();
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+        }
+    </script>
+</body>
+
+</html>
